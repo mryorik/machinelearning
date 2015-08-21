@@ -73,15 +73,22 @@ J = sum(sum(log(h) .* yv) + sum(log(1 - h) .* (1 - yv))) / -m ...
     + lambda * (sum(sum(Theta1(:, 2:s1) .* Theta1(:, 2:s1))) ...
     + sum(sum(Theta2(:, 2:s2) .* Theta2(:, 2:s2)))) / (2 * m);
 
+%keyboard;
 for t = 1:m
-    delta_3 = h(t,:)' - yv(t)';
-    delta_2 = Theta2' * delta_3 .* sigmoidGradient([1; a2(t,:)']);
-    Theta1_grad = Theta1_grad + delta_2(2:end) * X(t,:);
-    Theta2_grad = Theta2_grad + delta_3 * [1, a2(t,:)];
+    a_1 = X(t, :)';
+    z_2 = Theta1 * a_1;
+    a_2 = [1; sigmoid(z_2)];
+    z_3 = Theta2 * a_2;
+    a_3 = sigmoid(z_3);
+    
+    delta_3 = a_3 - yv(t,:)';
+    delta_2 = Theta2' * delta_3 .* [1; sigmoidGradient(z_2)];
+    Theta1_grad = Theta1_grad + delta_2(2:end) * a_1';
+    Theta2_grad = Theta2_grad + delta_3 * a_2';
 end
 
-Theta1_grad = Theta1_grad / m;
-Theta2_grad = Theta2_grad / m;
+Theta1_grad = Theta1_grad / m + lambda / m * [zeros(hidden_layer_size, 1), Theta1(:, 2:end)];
+Theta2_grad = Theta2_grad / m + lambda / m * [zeros(num_labels, 1), Theta2(:, 2:end)];
 
 
 
