@@ -61,8 +61,16 @@ Theta2_grad = zeros(size(Theta2));
 %               the regularization separately and then add them to Theta1_grad
 %               and Theta2_grad from Part 2.
 %
+X = [ones(m, 1), X];
+a2 = sigmoid(X * Theta1');
+h = sigmoid([ones(m, 1), a2] * Theta2');
+yv = repmat(y, 1, num_labels) == repmat(1:num_labels, m, 1);
+s1 = input_layer_size + 1;
+s2 = hidden_layer_size + 1;
 
-
+J = sum(sum(log(h) .* yv) + sum(log(1 - h) .* (1 - yv))) / -m ...
+    + lambda * (sum(sum(Theta1(:, 2:s1) .* Theta1(:, 2:s1))) ...
+    + sum(sum(Theta2(:, 2:s2) .* Theta2(:, 2:s2)))) / (2 * m);
 
 
 
