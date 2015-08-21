@@ -62,7 +62,8 @@ Theta2_grad = zeros(size(Theta2));
 %               and Theta2_grad from Part 2.
 %
 X = [ones(m, 1), X];
-a2 = sigmoid(X * Theta1');
+z2 = X * Theta1';
+a2 = sigmoid(z2);
 h = sigmoid([ones(m, 1), a2] * Theta2');
 yv = repmat(y, 1, num_labels) == repmat(1:num_labels, m, 1);
 s1 = input_layer_size + 1;
@@ -72,9 +73,15 @@ J = sum(sum(log(h) .* yv) + sum(log(1 - h) .* (1 - yv))) / -m ...
     + lambda * (sum(sum(Theta1(:, 2:s1) .* Theta1(:, 2:s1))) ...
     + sum(sum(Theta2(:, 2:s2) .* Theta2(:, 2:s2)))) / (2 * m);
 
+for t = 1:m
+    delta_3 = h(t,:)' - yv(t)';
+    delta_2 = Theta2' * delta_3 .* sigmoidGradient([1; a2(t,:)']);
+    Theta1_grad = Theta1_grad + delta_2(2:end) * X(t,:);
+    Theta2_grad = Theta2_grad + delta_3 * [1, a2(t,:)];
+end
 
-
-
+Theta1_grad = Theta1_grad / m;
+Theta2_grad = Theta2_grad / m;
 
 
 
