@@ -87,7 +87,7 @@ public class TitleCount extends Configured implements Tool {
             Map<String, Integer> words = new HashMap<String, Integer>();
 
             while (st.hasMoreTokens()) {
-                String token = st.nextToken();
+                String token = st.nextToken().toLowerCase();
                 if (stopWords.contains(token)) {
                     continue;
                 }
