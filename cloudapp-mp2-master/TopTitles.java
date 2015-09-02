@@ -126,14 +126,35 @@ public class TopTitles extends Configured implements Tool {
 
         @Override
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
-        // TODO
+            StringTokenizer st = new StringTokenizer(value.toString(), delimiters);
+
+            Map<String, Integer> words = new HashMap<String, Integer>();
+
+            while (st.hasMoreTokens()) {
+                String token = st.nextToken().toLowerCase();
+                if (stopWords.contains(token)) {
+                    continue;
+                }
+
+                Integer c = words.get(token) == null ? 0 : words.get(token);
+                words.put(token, ++c);
+            }
+
+            for (Map.Entry<String, Integer> e: words.entrySet()) {
+                context.write(new Text(e.getKey()), new IntWritable(e.getValue()));
+            }
         }
     }
 
     public static class TitleCountReduce extends Reducer<Text, IntWritable, Text, IntWritable> {
         @Override
         public void reduce(Text key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException {
-            // TODO
+            IntWritable total = new IntWritable(0);
+            for (IntWritable v : values) {
+                total.set(total.get() + v.get());
+            }
+
+            context.write(key, total);
         }
     }
 
