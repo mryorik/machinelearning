@@ -22,10 +22,7 @@ import org.apache.hadoop.util.ToolRunner;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.Arrays;
-import java.util.List;
-import java.util.StringTokenizer;
-import java.util.TreeSet;
+import java.util.*;
 
 // >>> Don't Change
 public class TopTitles extends Configured implements Tool {
@@ -96,7 +93,7 @@ public class TopTitles extends Configured implements Tool {
             super(Text.class);
         }
 
-        public TextArrayWritable(String[] strings) {
+	public TextArrayWritable(String[] strings) {
             super(Text.class);
             Text[] texts = new Text[strings.length];
             for (int i = 0; i < strings.length; i++) {
@@ -160,38 +157,60 @@ public class TopTitles extends Configured implements Tool {
 
     public static class TopTitlesMap extends Mapper<Text, Text, NullWritable, TextArrayWritable> {
         Integer N;
-        // TODO
+        TreeSet<Pair<Integer, String>> pairs;
 
         @Override
         protected void setup(Context context) throws IOException,InterruptedException {
             Configuration conf = context.getConfiguration();
             this.N = conf.getInt("N", 10);
+            pairs = new TreeSet<Pair<Integer, String>>();
         }
 
         @Override
         public void map(Text key, Text value, Context context) throws IOException, InterruptedException {
-            // TODO
+            Integer count = Integer.valueOf(value.toString(), 10);
+            pairs.add(Pair.of(count, key.toString()));
+            if (pairs.size() > N) {
+                pairs.remove(pairs.first());
+            }
         }
 
         @Override
         protected void cleanup(Context context) throws IOException, InterruptedException {
-            // TODO
+            for (Pair<Integer, String> p : pairs) {
+                String[] strings = {p.first.toString(), p.second};
+                context.write(NullWritable.get(), new TextArrayWritable(strings));
+            }
+            pairs.clear();
         }
     }
 
     public static class TopTitlesReduce extends Reducer<NullWritable, TextArrayWritable, Text, IntWritable> {
         Integer N;
-        // TODO
+        TreeSet<Pair<Integer, String>> pairs;
 
         @Override
         protected void setup(Context context) throws IOException,InterruptedException {
             Configuration conf = context.getConfiguration();
             this.N = conf.getInt("N", 10);
+            pairs = new TreeSet<Pair<Integer, String>>();
         }
 
         @Override
         public void reduce(NullWritable key, Iterable<TextArrayWritable> values, Context context) throws IOException, InterruptedException {
-            // TODO
+            for (TextArrayWritable v : values) {
+                Text[] t = (Text[]) v.toArray();
+                Integer c = Integer.valueOf(t[0].toString(), 10);
+                String w = t[1].toString();
+                pairs.add(Pair.of(c, w));
+                if (pairs.size() > N) {
+                    pairs.remove(pairs.first());
+                }
+            }
+
+            for (Pair<Integer, String> p : pairs) {
+                context.write(new Text(p.second), new IntWritable(p.first));
+            }
         }
     }
 
