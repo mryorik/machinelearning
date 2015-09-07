@@ -49,7 +49,7 @@ public class TopTitles extends Configured implements Tool {
         FileInputFormat.setInputPaths(jobA, new Path(args[0]));
         FileOutputFormat.setOutputPath(jobA, tmpPath);
 
-        jobA.setJarByClass(TopTitles.class);
+        jobA.setJar("TopTitles.jar");
         jobA.waitForCompletion(true);
 
         Job jobB = Job.getInstance(conf, "Top Titles");
@@ -69,7 +69,7 @@ public class TopTitles extends Configured implements Tool {
         jobB.setInputFormatClass(KeyValueTextInputFormat.class);
         jobB.setOutputFormatClass(TextOutputFormat.class);
 
-        jobB.setJarByClass(TopTitles.class);
+        jobB.setJar("TopTitles.jar");
         return jobB.waitForCompletion(true) ? 0 : 1;
     }
 
