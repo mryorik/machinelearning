@@ -1,6 +1,7 @@
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
@@ -35,8 +36,8 @@ public class OrphanPages extends Configured implements Tool {
         jobA.setMapperClass(LinkCountMap.class);
         jobA.setReducerClass(OrphanPageReduce.class);
 
-        FileInputFormat.setInputPaths(jobA, new Path(args[1]));
-        FileOutputFormat.setOutputPath(jobA, new Path(args[2]));
+        FileInputFormat.setInputPaths(jobA, new Path(args[0]));
+        FileOutputFormat.setOutputPath(jobA, new Path(args[1]));
 
         jobA.setJar("OrphanPages.jar");
         return jobA.waitForCompletion(true) ? 0 : 1;
@@ -52,10 +53,10 @@ public class OrphanPages extends Configured implements Tool {
 
                 while (st.hasMoreTokens()) {
                     Integer linkedId = Integer.valueOf(st.nextToken(), 10);
-                    context.write(new IntWritable(linkedId), new IntWritable(id));
+                    context.write(new IntWritable(linkedId.intValue()), new IntWritable(id.intValue()));
                 }
 
-                content.write(new IntWritable(id), new IntWritable(-1));
+                context.write(new IntWritable(id.intValue()), new IntWritable(-1));
             }
         }
     }
@@ -72,7 +73,7 @@ public class OrphanPages extends Configured implements Tool {
             }
 
             if (!hasLinks) {
-                context.write(new IntWritable(key), NullWritable.get());
+                context.write(key, NullWritable.get());
             }
         }
     }

@@ -49,7 +49,7 @@ public class TopTitleStatistics extends Configured implements Tool {
         FileInputFormat.setInputPaths(jobA, new Path(args[0]));
         FileOutputFormat.setOutputPath(jobA, tmpPath);
 
-        jobA.setJarByClass(TopTitleStatistics.class);
+        jobA.setJar("TopTitleStatistics.jar");
         jobA.waitForCompletion(true);
 
         Job jobB = Job.getInstance(conf, "Top Titles Statistics");
@@ -69,7 +69,7 @@ public class TopTitleStatistics extends Configured implements Tool {
         jobB.setInputFormatClass(KeyValueTextInputFormat.class);
         jobB.setOutputFormatClass(TextOutputFormat.class);
 
-        jobB.setJarByClass(TopTitleStatistics.class);
+        jobB.setJar("TopTitleStatistics.jar");
         return jobB.waitForCompletion(true) ? 0 : 1;
     }
 
@@ -221,7 +221,7 @@ public class TopTitleStatistics extends Configured implements Tool {
             }
             mean = sum / N;
             for (Pair<Integer, String> p : pairs) {
-                var += Math.pow(p.first - mean, 2);
+                var += (p.first - mean) * (p.first - mean);
             }
             var = var / N;
 
