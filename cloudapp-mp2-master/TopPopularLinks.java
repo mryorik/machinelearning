@@ -20,8 +20,7 @@ import org.apache.hadoop.util.ToolRunner;
 
 import java.io.IOException;
 import java.lang.Integer;
-import java.util.StringTokenizer;
-import java.util.TreeSet;
+import java.util.*;
 
 // >>> Don't Change
 public class TopPopularLinks extends Configured implements Tool {
@@ -69,13 +68,13 @@ public class TopPopularLinks extends Configured implements Tool {
         Job jobB = Job.getInstance(conf, "TopLinks");
         jobB.setOutputKeyClass(IntWritable.class);
         jobB.setOutputValueClass(IntWritable.class);
-        jobB.setMapOutputKeyClass(NullWritable);
-        jobB.setMapOutputValueClass(IntArrayWritable);
+        jobB.setMapOutputKeyClass(NullWritable.class);
+        jobB.setMapOutputValueClass(IntArrayWritable.class);
         jobB.setMapperClass(TopLinksMap.class);
         jobB.setReducerClass(TopLinksReduce.class);
 
         FileInputFormat.setInputPaths(jobB, tmpPath);
-        FileOutputFormat.setOutputPath(job, new Path(args[1]));
+        FileOutputFormat.setOutputPath(jobB, new Path(args[1]));
 
         jobB.setJar("TopPopularLinks.jar");
         return jobB.waitForCompletion(true) ? 0 : 1;
@@ -101,7 +100,7 @@ public class TopPopularLinks extends Configured implements Tool {
         @Override
         public void reduce(IntWritable key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException {
             int c = 0;
-            for (Iterable v : values) {
+            for (IntWritable v : values) {
                 c++;
             }
             context.write(key, new IntWritable(c));
@@ -110,7 +109,7 @@ public class TopPopularLinks extends Configured implements Tool {
 
     public static class TopLinksMap extends Mapper<Text, Text, NullWritable, IntArrayWritable> {
         Integer N;
-        Set<Pair<Integer, Integer>> sortedLinks;
+        TreeSet<Pair<Integer, Integer>> sortedLinks;
 
         @Override
         protected void setup(Context context) throws IOException,InterruptedException {
@@ -142,7 +141,7 @@ public class TopPopularLinks extends Configured implements Tool {
 
     public static class TopLinksReduce extends Reducer<NullWritable, IntArrayWritable, IntWritable, IntWritable> {
         Integer N;
-        Set<Pair<Integer, Integer>> sortedLinks;
+        TreeSet<Pair<Integer, Integer>> sortedLinks;
 
         @Override
         protected void setup(Context context) throws IOException,InterruptedException {
@@ -154,7 +153,7 @@ public class TopPopularLinks extends Configured implements Tool {
         @Override
         public void reduce(NullWritable key, Iterable<IntArrayWritable> values, Context context) {
             for (IntArrayWritable v : values) {
-                IntWritable[] ii = v.toArray();
+                IntWritable[] ii = (IntWritable[]) v.toArray();
                 int count = ii[0].get();
                 int id = ii[1].get();
 
@@ -168,7 +167,7 @@ public class TopPopularLinks extends Configured implements Tool {
         @Override
         protected void cleanup(Context context) throws IOException, InterruptedException {
             for (Pair<Integer, Integer> l : sortedLinks) {
-                context.write(new IntWritable(l.second.intValue(), new IntWritable(l.first.intValue)));
+                context.write(new IntWritable(l.second.intValue()), new IntWritable(l.first.intValue()));
             }
             sortedLinks.clear();
         }
