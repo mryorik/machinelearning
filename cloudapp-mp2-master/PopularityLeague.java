@@ -29,10 +29,158 @@ public class PopularityLeague extends Configured implements Tool {
         System.exit(res);
     }
 
-    @Override
-    public int run(String[] args) throws Exception {
-        // TODO
+	public static class IntArrayWritable extends ArrayWritable {
+        public IntArrayWritable() {
+            super(IntWritable.class);
+        }
+
+        public IntArrayWritable(Integer[] numbers) {
+            super(IntWritable.class);
+            IntWritable[] ints = new IntWritable[numbers.length];
+            for (int i = 0; i < numbers.length; i++) {
+                ints[i] = new IntWritable(numbers[i]);
+            }
+            set(ints);
+        }
     }
 
-    // TODO
+    public static String readHDFSFile(String path, Configuration conf) throws IOException{
+        Path pt=new Path(path);
+        FileSystem fs = FileSystem.get(pt.toUri(), conf);
+        FSDataInputStream file = fs.open(pt);
+        BufferedReader buffIn=new BufferedReader(new InputStreamReader(file));
+
+        StringBuilder everything = new StringBuilder();
+        String line;
+        while( (line = buffIn.readLine()) != null) {
+            everything.append(line);
+            everything.append("\n");
+        }
+        return everything.toString();
+    }
+
+    @Override
+    public int run(String[] args) throws Exception {
+        Configuration conf = this.getConf();
+        FileSystem fs = FileSystem.get(conf);
+        Path tmpPath = new Path("/mp2/tmp");
+
+        Job jobA = Job.getInstance(conf, "LinkCount");
+        jobA.setOutputKeyClass(IntWritable.class);
+        jobA.setOutputValueClass(IntWritable.class);
+        jobA.setMapperClass(LinkCountMap.class);
+        jobA.setReducerClass(LinkCountReduce.class);
+
+        FileInputFormat.setInputPaths(jobA, new Path(args[0]));
+        FileOutputFormat.setOutputPath(jobA, tmpPath);
+
+        jobA.setJar("PopularityLeague.jar");
+        jobA.waitForCompletion(true);
+
+        Job jobB = Job.getInstance(conf, "PopularityLeague");
+        jobB.setOutputKeyClass(IntWritable.class);
+        jobB.setOutputValueClass(IntWritable.class);
+        jobB.setMapOutputKeyClass(NullWritable.class);
+        jobB.setMapOutputValueClass(IntArrayWritable.class);
+        jobB.setMapperClass(PopularityLeagueMap.class);
+        jobB.setReducerClass(PopularityLeagueReduce.class);
+        jobB.setInputFormatClass(KeyValueTextInputFormat.class);
+        jobB.setOutputFormatClass(TextOutputFormat.class);
+
+        FileInputFormat.setInputPaths(jobB, tmpPath);
+        FileOutputFormat.setOutputPath(jobB, new Path(args[1]));
+
+        jobB.setJar("PopularityLeague.jar");
+        return jobB.waitForCompletion(true) ? 0 : 1;
+    }
+
+    public static class LinkCountMap extends Mapper<Object, Text, IntWritable, IntWritable> {
+        @Override
+        public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
+            StringTokenizer st = new StringTokenizer(value.toString(), " \t:");
+
+            if (st.hasMoreTokens()) {
+                Integer id = Integer.valueOf(st.nextToken(), 10);
+
+                while (st.hasMoreTokens()) {
+                    Integer linkedId = Integer.valueOf(st.nextToken(), 10);
+                    context.write(new IntWritable(linkedId.intValue()), new IntWritable(1));
+                }
+            }
+        }
+    }
+
+    public static class LinkCountReduce extends Reducer<IntWritable, IntWritable, IntWritable, IntWritable> {
+        @Override
+        public void reduce(IntWritable key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException {
+            int c = 0;
+            for (IntWritable v : values) {
+                c++;
+            }
+            context.write(key, new IntWritable(c));
+        }
+    }
+
+    public static class PopularityLeagueMap extends Mapper<Text, Text, NullWritable, IntArrayWritable> {
+    	List<String> leagueIds;
+
+    	@Override
+        protected void setup(Context context) throws IOException,InterruptedException {
+            Configuration conf = context.getConfiguration();
+            String leaguePath = conf.get("league");
+            this.leagueIds = Arrays.asList(readHDFSFile(stopWordsPath, conf).split("\n"));
+        }
+
+        @Override
+        public void map(Text key, Text value, Context context) throws IOException, InterruptedException {
+        	Integer id = Integer.valueOf(key.toString(), 10);
+            if (leagueIds.contains(id.toString())) {
+            	Integer count = Integer.valueOf(value.toString(), 10);
+            	Integer[] integers = {id, count};
+            	context.write(NullWritable.get(), new IntArrayWritable(integers));
+            }
+        }
+
+        @Override
+        protected void cleanup(Context context) throws IOException,InterruptedException {
+        }
+    }
+
+    public static class PopularityLeagueReduce extends Reducer<NullWritable, Iterable<IntArrayWritable>, IntWritable, IntWritable> {
+    	Map<Integer, Integer> league;
+    	Map<Integer, Integer> ranks;
+
+    	@Override
+        protected void setup(Context context) throws IOException,InterruptedException {
+        	league = new HashMap<Integer, Integer>();
+        	ranks = new HashMap<Integer, Integer>();
+        }
+
+        @Override
+        public void reduce(NullWritable key, Iterable<IntArrayWritable> values, Context context) throws IOException, InterruptedException {
+            for (IntArrayWritable v : values) {
+                IntWritable[] ii = (IntWritable[]) v.toArray();
+                int id = ii[0].get();
+                int count = ii[1].get();
+
+                league.put(id, count);
+            }
+
+            for (Entry<Integer, Integer> l1 : league.entrySet()) {
+        		for (Entry<Integer, Integer> l2 : league.entrySet()) {
+        			if (league.get(l2.key()) < l1.value()) {
+        				Integer currRank = ranks.get(l1.key());
+        				if (currRank == null) {
+        					currRank = 0;
+        				}
+        				ranks.put(l1.key(), currRank + 1);
+        			}
+        		}
+        	}
+
+        	for (Entry<Integer, Integer> l1 : league.entrySet()) {
+        		context.write(new IntWritable(l1.key().intValue()), l1.value().intValue());
+        	}
+        }
+    }
 }
