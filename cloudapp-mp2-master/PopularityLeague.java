@@ -64,6 +64,7 @@ public class PopularityLeague extends Configured implements Tool {
         Configuration conf = this.getConf();
         FileSystem fs = FileSystem.get(conf);
         Path tmpPath = new Path("/mp2/tmp");
+        fs.delete(tmpPath, true);
 
         Job jobA = Job.getInstance(conf, "LinkCount");
         jobA.setOutputKeyClass(IntWritable.class);
@@ -128,7 +129,7 @@ public class PopularityLeague extends Configured implements Tool {
         protected void setup(Context context) throws IOException,InterruptedException {
             Configuration conf = context.getConfiguration();
             String leaguePath = conf.get("league");
-            this.leagueIds = Arrays.asList(readHDFSFile(stopWordsPath, conf).split("\n"));
+            this.leagueIds = Arrays.asList(readHDFSFile(leaguePath, conf).split("\n"));
         }
 
         @Override
@@ -146,7 +147,7 @@ public class PopularityLeague extends Configured implements Tool {
         }
     }
 
-    public static class PopularityLeagueReduce extends Reducer<NullWritable, Iterable<IntArrayWritable>, IntWritable, IntWritable> {
+    public static class PopularityLeagueReduce extends Reducer<NullWritable, IntArrayWritable, IntWritable, IntWritable> {
     	Map<Integer, Integer> league;
     	Map<Integer, Integer> ranks;
 
@@ -164,23 +165,24 @@ public class PopularityLeague extends Configured implements Tool {
                 int count = ii[1].get();
 
                 league.put(id, count);
+                ranks.put(id, 0);
+            }
+        }
+
+        @Override
+        protected void cleanup(Context context) throws IOException, InterruptedException {
+            for (Map.Entry<Integer, Integer> l1 : league.entrySet()) {
+                for (Map.Entry<Integer, Integer> l2 : league.entrySet()) {
+                    if (l2.getValue() < l1.getValue()) {
+                        Integer currRank = ranks.get(l1.getKey());
+                        ranks.put(l1.getKey(), currRank + 1);
+                    }
+                }
             }
 
-            for (Entry<Integer, Integer> l1 : league.entrySet()) {
-        		for (Entry<Integer, Integer> l2 : league.entrySet()) {
-        			if (league.get(l2.key()) < l1.value()) {
-        				Integer currRank = ranks.get(l1.key());
-        				if (currRank == null) {
-        					currRank = 0;
-        				}
-        				ranks.put(l1.key(), currRank + 1);
-        			}
-        		}
-        	}
-
-        	for (Entry<Integer, Integer> l1 : league.entrySet()) {
-        		context.write(new IntWritable(l1.key().intValue()), l1.value().intValue());
-        	}
+            for (Map.Entry<Integer, Integer> r : ranks.entrySet()) {
+                context.write(new IntWritable(r.getKey().intValue()), new IntWritable(r.getValue().intValue()));
+            }
         }
     }
 }

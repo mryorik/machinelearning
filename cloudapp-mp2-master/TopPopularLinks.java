@@ -52,6 +52,7 @@ public class TopPopularLinks extends Configured implements Tool {
         Configuration conf = this.getConf();
         FileSystem fs = FileSystem.get(conf);
         Path tmpPath = new Path("/mp2/tmp");
+        fs.delete(tmpPath, true);
 
         Job jobA = Job.getInstance(conf, "LinkCount");
         jobA.setOutputKeyClass(IntWritable.class);
