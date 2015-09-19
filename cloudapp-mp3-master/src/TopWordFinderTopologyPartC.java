@@ -16,13 +16,13 @@ import backtype.storm.tuple.Values;
  */
 public class TopWordFinderTopologyPartC {
 
-  public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws Exception {
 
 
-    TopologyBuilder builder = new TopologyBuilder();
+        TopologyBuilder builder = new TopologyBuilder();
 
-    Config config = new Config();
-    config.setDebug(true);
+        Config config = new Config();
+        config.setDebug(true);
 
 
     /*
@@ -40,16 +40,19 @@ public class TopWordFinderTopologyPartC {
 
 
     ------------------------------------------------- */
+        builder.setSpout("spout", new FileReaderSpout());
+        builder.setBolt("split", new SplitSentenceBolt()).shuffleGrouping("spout");
+        builder.setBolt("normalize", new NormalizerBolt()).fieldsGrouping("split", new Fields("word"));
+        builder.setBolt("count", new WordCountBolt()).fieldsGrouping("normalize", new Fields("word"));
 
+        config.setMaxTaskParallelism(3);
 
-    config.setMaxTaskParallelism(3);
+        LocalCluster cluster = new LocalCluster();
+        cluster.submitTopology("word-count", config, builder.createTopology());
 
-    LocalCluster cluster = new LocalCluster();
-    cluster.submitTopology("word-count", config, builder.createTopology());
+        //wait for 2 minutes then kill the job
+        Thread.sleep(2 * 60 * 1000);
 
-    //wait for 2 minutes then kill the job
-    Thread.sleep(2 * 60 * 1000);
-
-    cluster.shutdown();
-  }
+        cluster.shutdown();
+    }
 }

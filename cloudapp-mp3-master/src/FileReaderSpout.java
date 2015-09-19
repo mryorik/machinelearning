@@ -11,15 +11,16 @@ import backtype.storm.topology.IRichSpout;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
+import backtype.storm.utils.Utils;
 
 public class FileReaderSpout implements IRichSpout {
-  private SpoutOutputCollector _collector;
-  private TopologyContext context;
+    private SpoutOutputCollector _collector;
+    private TopologyContext context;
+    private BufferedReader bufferedReader;
 
-
-  @Override
-  public void open(Map conf, TopologyContext context,
-                   SpoutOutputCollector collector) {
+    @Override
+    public void open(Map conf, TopologyContext context,
+                     SpoutOutputCollector collector) {
 
      /*
     ----------------------TODO-----------------------
@@ -27,13 +28,19 @@ public class FileReaderSpout implements IRichSpout {
 
 
     ------------------------------------------------- */
+        try {
+            FileReader fileReader = new FileReader("data.txt");
+            bufferedReader = new BufferedReader(fileReader);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
 
-    this.context = context;
-    this._collector = collector;
-  }
+        this.context = context;
+        this._collector = collector;
+    }
 
-  @Override
-  public void nextTuple() {
+    @Override
+    public void nextTuple() {
 
      /*
     ----------------------TODO-----------------------
@@ -42,47 +49,56 @@ public class FileReaderSpout implements IRichSpout {
     2. don't forget to sleep when the file is entirely read to prevent a busy-loop
 
     ------------------------------------------------- */
+        try {
+            _collector.emit(new Values(bufferedReader.readLine()));
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            Utils.sleep(100);
+        }
+    }
 
+    @Override
+    public void declareOutputFields(OutputFieldsDeclarer declarer) {
 
-  }
+        declarer.declare(new Fields("word"));
 
-  @Override
-  public void declareOutputFields(OutputFieldsDeclarer declarer) {
+    }
 
-    declarer.declare(new Fields("word"));
-
-  }
-
-  @Override
-  public void close() {
+    @Override
+    public void close() {
    /*
     ----------------------TODO-----------------------
     Task: close the file
 
 
     ------------------------------------------------- */
+        try {
+            bufferedReader.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
-  }
 
+    @Override
+    public void activate() {
+    }
 
-  @Override
-  public void activate() {
-  }
+    @Override
+    public void deactivate() {
+    }
 
-  @Override
-  public void deactivate() {
-  }
+    @Override
+    public void ack(Object msgId) {
+    }
 
-  @Override
-  public void ack(Object msgId) {
-  }
+    @Override
+    public void fail(Object msgId) {
+    }
 
-  @Override
-  public void fail(Object msgId) {
-  }
-
-  @Override
-  public Map<String, Object> getComponentConfiguration() {
-    return null;
-  }
+    @Override
+    public Map<String, Object> getComponentConfiguration() {
+        return null;
+    }
 }
