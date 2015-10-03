@@ -28,7 +28,7 @@ public class SuperTable{
       HBaseAdmin admin = new HBaseAdmin(con);
       
       // Instantiate table descriptor class
-      HTableDescriptor tableDescriptor = new HTableDescriptor(TableName.valueOf("emp"));
+      HTableDescriptor tableDescriptor = new HTableDescriptor(TableName.valueOf("powers"));
 
       // Add column families to table descriptor
       tableDescriptor.addFamily(new HColumnDescriptor("personal"));
@@ -38,7 +38,7 @@ public class SuperTable{
       admin.createTable(tableDescriptor);
 
       // Instantiating HTable class
-      HTable hTable = new HTable(config, "emp");
+      HTable hTable = new HTable(con, "powers");
      
       // Repeat these steps as many times as necessary
 
@@ -72,7 +72,7 @@ public class SuperTable{
       // Save the table
 	
       // Close table
-      hTable.close();
+      // hTable.close();
 
       // Instantiate the Scan class
       Scan scan = new Scan();
@@ -81,7 +81,7 @@ public class SuperTable{
       scan.addColumn(Bytes.toBytes("personal"), Bytes.toBytes("hero"));
 
       // Get the scan result
-      ResultScanner scanner = table.getScanner(scan);
+      ResultScanner scanner = hTable.getScanner(scan);
 
       // Read values from scan result
       // Print scan result
