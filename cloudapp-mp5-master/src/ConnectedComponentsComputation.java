@@ -65,6 +65,6 @@ public class ConnectedComponentsComputation extends
       vertex.setValue(new IntWritable(currentComponent));
       sendMessageToAllEdges(vertex, vertex.getValue());
     }
-    vertex.voteToHalt()
+    vertex.voteToHalt();
   }
 }
