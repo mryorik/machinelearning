@@ -33,8 +33,8 @@ public final class RandomForestMP {
 
         public Vector call(String line) {
             String[] tok = SPACE.split(line);
-            double[] point = new double[tok.length];
-            for (int i = 0; i < tok.length; ++i) {
+            double[] point = new double[tok.length - 1];
+            for (int i = 0; i < tok.length - 1; ++i) {
                 point[i] = Double.parseDouble(tok[i]);
             }
             return Vectors.dense(point);
