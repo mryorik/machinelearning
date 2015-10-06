@@ -52,9 +52,6 @@ public final class RandomForestMP {
         Integer seed = 12345;
 
 		// TODO
-        SparkConf sparkConf = new SparkConf().setAppName("RandomForest MP");
-        JavaSparkContext sc = new JavaSparkContext(sparkConf);
-
         JavaRDD<String> lines = sc.textFile(training_data_path);
         JavaRDD<LabeledPoint> input = lines.map(new ParsePoint());
 
