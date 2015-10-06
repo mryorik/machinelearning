@@ -62,7 +62,7 @@ public final class KMeansMP {
         public ClusterCars(KMeansModel model) {
             this.model = model;
         }
-        
+
         public Tuple2<Integer, String> call(Tuple2<String, Vector> args) {
             String title = args._1();
             Vector point = args._2();
@@ -94,7 +94,7 @@ public final class KMeansMP {
         JavaRDD<Vector> points = lines.map(new ParsePoint());
         JavaRDD<String> titles = lines.map(new ParseTitle());
 
-        KMeansModel model = KMeans.train(points.rdd(), k, iterations, runs, KMeans.RANDOM(), 0);
+        model = KMeans.train(points.rdd(), k, iterations, runs, KMeans.RANDOM(), 0);
 
         JavaPairRDD<Integer, Iterable<String>> results = titles.zip(points).mapToPair(new ClusterCars(model)).groupByKey();
         results.foreach(new PrintCluster(model));
