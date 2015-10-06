@@ -96,7 +96,7 @@ public final class KMeansMP {
 
         model = KMeans.train(points.rdd(), k, iterations, runs, KMeans.RANDOM(), 0);
 
-        JavaPairRDD<Integer, Iterable<String>> results = titles.zip(points).mapToPair(new ClusterCars(model)).groupByKey();
+        results = titles.zip(points).mapToPair(new ClusterCars(model)).groupByKey();
         results.foreach(new PrintCluster(model));
 
         results.saveAsTextFile(results_path);
