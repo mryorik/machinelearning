@@ -15,6 +15,18 @@ import java.util.HashMap;
 import java.util.regex.Pattern;
 
 public final class RandomForestMP {
+    private static class ParsePoint implements Function<String, LabeledPoint> {
+        private static final Pattern SPACE = Pattern.compile(",");
+
+        public LabeledPoint call(String line) {
+            String[] tok = SPACE.split(line);
+            double[] point = new double[tok.length-1];
+            for (int i = 0; i < tok.length - 1; ++i) {
+                point[i] = Double.parseDouble(tok[i]);
+            }
+            return new LabeledPoint(tol[tol.length - 1], Vectors.dense(point));
+        }
+    }
 
     public static void main(String[] args) {
         if (args.length < 3) {
@@ -40,8 +52,18 @@ public final class RandomForestMP {
         Integer seed = 12345;
 
 		// TODO
+        SparkConf sparkConf = new SparkConf().setAppName("RandomForest MP");
+        JavaSparkContext sc = new JavaSparkContext(sparkConf);
 
-        /*JavaRDD<LabeledPoint> results = test.map(new Function<Vector, LabeledPoint>() {
+        JavaRDD<String> lines = sc.textFile(training_data_path);
+        JavaRDD<LabeledPoint> input = lines.map(new ParsePoint());
+
+        lines = sc.textFile(test_data_path);
+        JavaRDD<LabeledPoint> test = lines.map(new ParsePoint());
+
+        model = RandomForestModel.trainClassifier(input, numClasses, categoricalFeaturesInfo, numTrees, featureSubsetStrategy, impurity, maxDepth, maxBins, seed);
+
+        JavaRDD<LabeledPoint> results = test.map(new Function<Vector, LabeledPoint>() {
             public LabeledPoint call(Vector points) {
                 return new LabeledPoint(model.predict(points), points);
             }
@@ -49,7 +71,7 @@ public final class RandomForestMP {
 
         results.saveAsTextFile(results_path);
 
-        sc.stop();*/
+        sc.stop();
     }
 
 }
