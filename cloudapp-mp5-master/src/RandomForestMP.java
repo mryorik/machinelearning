@@ -55,14 +55,14 @@ public final class RandomForestMP {
         JavaSparkContext sc = new JavaSparkContext(sparkConf);
         final RandomForestModel model;
 
-        Integer numClasses = 2;
+        int numClasses = 2;
         HashMap<Integer, Integer> categoricalFeaturesInfo = new HashMap<Integer, Integer>();
-        Integer numTrees = 3;
+        int numTrees = 3;
         String featureSubsetStrategy = "auto";
         String impurity = "gini";
-        Integer maxDepth = 5;
-        Integer maxBins = 32;
-        Integer seed = 12345;
+        int maxDepth = 5;
+        int maxBins = 32;
+        int seed = 12345;
 
 		// TODO
         JavaRDD<String> lines = sc.textFile(training_data_path);
