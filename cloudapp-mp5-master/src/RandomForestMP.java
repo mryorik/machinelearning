@@ -28,6 +28,19 @@ public final class RandomForestMP {
         }
     }
 
+    private static class ParseTextPoint implements Function<String, Vector> {
+        private static final Pattern SPACE = Pattern.compile(",");
+
+        public Vector call(String line) {
+            String[] tok = SPACE.split(line);
+            double[] point = new double[tok.length];
+            for (int i = 0; i < tok.length; ++i) {
+                point[i] = Double.parseDouble(tok[i]);
+            }
+            return Vectors.dense(point);
+        }
+    }
+
     public static void main(String[] args) {
         if (args.length < 3) {
             System.err.println(
@@ -56,7 +69,7 @@ public final class RandomForestMP {
         JavaRDD<LabeledPoint> input = lines.map(new ParsePoint());
 
         lines = sc.textFile(test_data_path);
-        JavaRDD<LabeledPoint> test = lines.map(new ParsePoint());
+        JavaRDD<Vector> test = lines.map(new ParseTextPoint());
 
         model = RandomForestModel.trainClassifier(input, numClasses, categoricalFeaturesInfo, numTrees, featureSubsetStrategy, impurity, maxDepth, maxBins, seed);
 
